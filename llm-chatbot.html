@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Universal AI Chat</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Crimson+Pro:wght@300;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #0a0e1a;
+            --bg-secondary: #141824;
+            --bg-tertiary: #1e2433;
+            --accent-primary: #00ffcc;
+            --accent-secondary: #ff00ff;
+            --text-primary: #e8eaed;
+            --text-secondary: #9aa0b0;
+            --border-color: #2a3244;
+            --shadow: 0 8px 32px rgba(0, 255, 204, 0.1);
+        }
+
+        body {
+            font-family: 'Crimson Pro', serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        /* Animated background */
+        .bg-grid {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(var(--border-color) 1px, transparent 1px),
+                linear-gradient(90deg, var(--border-color) 1px, transparent 1px);
+            background-size: 50px 50px;
+            opacity: 0.3;
+            animation: gridMove 20s linear infinite;
+            z-index: 0;
+        }
+
+        @keyframes gridMove {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(50px, 50px); }
+        }
+
+        .container {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            height: 100vh;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 320px;
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            padding: 24px;
+            overflow-y: auto;
+        }
+
+        .logo {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 24px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 32px;
+            letter-spacing: -1px;
+        }
+
+        .model-selector {
+            margin-bottom: 24px;
+        }
+
+        .model-selector label {
+            display: block;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .model-selector select {
+            width: 100%;
+            padding: 12px 16px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 14px;
+            font-family: 'Crimson Pro', serif;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .model-selector select:hover {
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 20px rgba(0, 255, 204, 0.2);
+        }
+
+        .model-selector select:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 20px rgba(0, 255, 204, 0.3);
+        }
+
+        .provider-group {
+            font-weight: 600;
+            color: var(--accent-primary);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+        }
+
+        .settings-section {
+            margin-bottom: 24px;
+        }
+
+        .settings-section h3 {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .slider-control {
+            margin-bottom: 16px;
+        }
+
+        .slider-control label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+
+        .slider-control input[type="range"] {
+            width: 100%;
+            height: 4px;
+            background: var(--bg-tertiary);
+            border-radius: 2px;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        .slider-control input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            background: var(--accent-primary);
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(0, 255, 204, 0.5);
+        }
+
+        .slider-control input[type="range"]::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            background: var(--accent-primary);
+            border-radius: 50%;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 0 10px rgba(0, 255, 204, 0.5);
+        }
+
+        .btn-clear {
+            width: 100%;
+            padding: 12px;
+            background: transparent;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-clear:hover {
+            border-color: var(--accent-secondary);
+            color: var(--accent-secondary);
+            box-shadow: 0 0 20px rgba(255, 0, 255, 0.2);
+        }
+
+        /* Main chat area */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-primary);
+        }
+
+        .chat-header {
+            padding: 24px 32px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .model-info {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px;
+            color: var(--accent-primary);
+        }
+
+        .status {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .status.connected {
+            color: var(--accent-primary);
+        }
+
+        .status::before {
+            content: '●';
+            margin-right: 6px;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 32px;
+            scroll-behavior: smooth;
+        }
+
+        .message {
+            margin-bottom: 24px;
+            animation: messageSlideIn 0.4s ease;
+            opacity: 0;
+            animation-fill-mode: forwards;
+        }
+
+        @keyframes messageSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+            gap: 12px;
+        }
+
+        .message-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .message.user .message-avatar {
+            background: linear-gradient(135deg, var(--accent-secondary), #ff6b6b);
+        }
+
+        .message.assistant .message-avatar {
+            background: linear-gradient(135deg, var(--accent-primary), #00d4ff);
+        }
+
+        .message-name {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .message-content {
+            margin-left: 44px;
+            line-height: 1.7;
+            font-size: 16px;
+            color: var(--text-primary);
+        }
+
+        .message.assistant .message-content {
+            background: var(--bg-secondary);
+            padding: 16px 20px;
+            border-radius: 12px;
+            border-left: 3px solid var(--accent-primary);
+        }
+
+        /* Input area */
+        .chat-input-container {
+            padding: 24px 32px;
+            border-top: 1px solid var(--border-color);
+            background: var(--bg-secondary);
+        }
+
+        .chat-input-wrapper {
+            display: flex;
+            gap: 12px;
+            align-items: flex-end;
+        }
+
+        .chat-input {
+            flex: 1;
+            min-height: 50px;
+            max-height: 200px;
+            padding: 14px 20px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-size: 15px;
+            font-family: 'Crimson Pro', serif;
+            resize: none;
+            overflow-y: auto;
+            transition: all 0.3s ease;
+        }
+
+        .chat-input:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+            box-shadow: var(--shadow);
+        }
+
+        .chat-input::placeholder {
+            color: var(--text-secondary);
+        }
+
+        .btn-send {
+            padding: 14px 28px;
+            background: linear-gradient(135deg, var(--accent-primary), #00d4ff);
+            border: none;
+            border-radius: 12px;
+            color: var(--bg-primary);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 20px rgba(0, 255, 204, 0.3);
+        }
+
+        .btn-send:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 30px rgba(0, 255, 204, 0.5);
+        }
+
+        .btn-send:active {
+            transform: translateY(0);
+        }
+
+        .btn-send:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Loading animation */
+        .typing-indicator {
+            display: none;
+            margin-left: 44px;
+            padding: 16px 20px;
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            border-left: 3px solid var(--accent-primary);
+            width: fit-content;
+        }
+
+        .typing-indicator.active {
+            display: block;
+        }
+
+        .typing-dots {
+            display: flex;
+            gap: 6px;
+        }
+
+        .typing-dots span {
+            width: 8px;
+            height: 8px;
+            background: var(--accent-primary);
+            border-radius: 50%;
+            animation: typingBounce 1.4s infinite;
+        }
+
+        .typing-dots span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-dots span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typingBounce {
+            0%, 60%, 100% {
+                transform: translateY(0);
+                opacity: 0.6;
+            }
+            30% {
+                transform: translateY(-10px);
+                opacity: 1;
+            }
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-primary);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--accent-primary);
+        }
+
+        /* Error message */
+        .error-message {
+            margin-left: 44px;
+            padding: 12px 16px;
+            background: rgba(255, 0, 100, 0.1);
+            border: 1px solid rgba(255, 0, 100, 0.3);
+            border-radius: 8px;
+            color: #ff6b9d;
+            font-size: 14px;
+            margin-top: 8px;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                position: fixed;
+                left: -320px;
+                z-index: 100;
+                transition: left 0.3s ease;
+            }
+
+            .sidebar.active {
+                left: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-grid"></div>
+    
+    <div class="container">
+        <aside class="sidebar">
+            <div class="logo">⚡ UNIVERSAL AI</div>
+            
+            <div class="model-selector">
+                <label>Select AI Model</label>
+                <select id="modelSelect">
+                    <optgroup label="─── ANTHROPIC ───" class="provider-group">
+                        <option value="claude-opus-4">Claude Opus 4.5</option>
+                        <option value="claude-sonnet-4" selected>Claude Sonnet 4.5</option>
+                        <option value="claude-haiku-4">Claude Haiku 4.5</option>
+                        <option value="claude-3-opus">Claude 3 Opus</option>
+                        <option value="claude-3-sonnet">Claude 3.5 Sonnet</option>
+                        <option value="claude-3-haiku">Claude 3.5 Haiku</option>
+                    </optgroup>
+                    
+                    <optgroup label="─── OPENAI ───" class="provider-group">
+                        <option value="gpt-4-turbo">GPT-4 Turbo</option>
+                        <option value="gpt-4">GPT-4</option>
+                        <option value="gpt-4o">GPT-4o</option>
+                        <option value="gpt-4o-mini">GPT-4o Mini</option>
+                        <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+                        <option value="o1-preview">o1 Preview</option>
+                        <option value="o1-mini">o1 Mini</option>
+                    </optgroup>
+                    
+                    <optgroup label="─── GOOGLE ───" class="provider-group">
+                        <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
+                        <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
+                        <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
+                        <option value="gemini-pro">Gemini Pro</option>
+                    </optgroup>
+                    
+                    <optgroup label="─── META ───" class="provider-group">
+                        <option value="llama-3.3-70b">Llama 3.3 70B</option>
+                        <option value="llama-3.1-405b">Llama 3.1 405B</option>
+                        <option value="llama-3.1-70b">Llama 3.1 70B</option>
+                        <option value="llama-3.1-8b">Llama 3.1 8B</option>
+                    </optgroup>
+                    
+                    <optgroup label="─── MISTRAL ───" class="provider-group">
+                        <option value="mistral-large">Mistral Large</option>
+                        <option value="mistral-medium">Mistral Medium</option>
+                        <option value="mistral-small">Mistral Small</option>
+                        <option value="mixtral-8x7b">Mixtral 8x7B</option>
+                        <option value="mixtral-8x22b">Mixtral 8x22B</option>
+                    </optgroup>
+                    
+                    <optgroup label="─── COHERE ───" class="provider-group">
+                        <option value="command-r-plus">Command R+</option>
+                        <option value="command-r">Command R</option>
+                        <option value="command">Command</option>
+                    </optgroup>
+                    
+                    <optgroup label="─── XAI ───" class="provider-group">
+                        <option value="grok-2">Grok 2</option>
+                        <option value="grok-beta">Grok Beta</option>
+                    </optgroup>
+                    
+                    <optgroup label="─── DEEPSEEK ───" class="provider-group">
+                        <option value="deepseek-chat">DeepSeek Chat</option>
+                        <option value="deepseek-coder">DeepSeek Coder</option>
+                    </optgroup>
+                    
+                    <optgroup label="─── PERPLEXITY ───" class="provider-group">
+                        <option value="pplx-70b-online">Perplexity 70B Online</option>
+                        <option value="pplx-7b-chat">Perplexity 7B Chat</option>
+                    </optgroup>
+                </select>
+            </div>
+
+            <div class="settings-section">
+                <h3>Parameters</h3>
+                
+                <div class="slider-control">
+                    <label>
+                        <span>Temperature</span>
+                        <span id="tempValue">0.7</span>
+                    </label>
+                    <input type="range" id="temperature" min="0" max="2" step="0.1" value="0.7">
+                </div>
+
+                <div class="slider-control">
+                    <label>
+                        <span>Max Tokens</span>
+                        <span id="tokensValue">2048</span>
+                    </label>
+                    <input type="range" id="maxTokens" min="256" max="8192" step="256" value="2048">
+                </div>
+
+                <div class="slider-control">
+                    <label>
+                        <span>Top P</span>
+                        <span id="topPValue">0.9</span>
+                    </label>
+                    <input type="range" id="topP" min="0" max="1" step="0.05" value="0.9">
+                </div>
+            </div>
+
+            <button class="btn-clear" id="clearChat">Clear Chat</button>
+        </aside>
+
+        <main class="main-content">
+            <header class="chat-header">
+                <div class="model-info" id="currentModel">Claude Sonnet 4.5</div>
+                <div class="status" id="status">Ready</div>
+            </header>
+
+            <div class="chat-messages" id="chatMessages">
+                <div class="message assistant">
+                    <div class="message-header">
+                        <div class="message-avatar">AI</div>
+                        <div class="message-name">Assistant</div>
+                    </div>
+                    <div class="message-content">
+                        Hello! I'm your Universal AI assistant. I can connect to multiple AI models from different providers. Select a model from the sidebar and start chatting!
+                    </div>
+                </div>
+            </div>
+
+            <div class="typing-indicator" id="typingIndicator">
+                <div class="typing-dots">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            </div>
+
+            <div class="chat-input-container">
+                <div class="chat-input-wrapper">
+                    <textarea 
+                        class="chat-input" 
+                        id="messageInput" 
+                        placeholder="Type your message here..."
+                        rows="1"
+                    ></textarea>
+                    <button class="btn-send" id="sendButton">Send</button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // State management
+        const state = {
+            messages: [],
+            currentModel: 'claude-sonnet-4',
+            temperature: 0.7,
+            maxTokens: 2048,
+            topP: 0.9,
+            isProcessing: false
+        };
+
+        // DOM elements
+        const elements = {
+            chatMessages: document.getElementById('chatMessages'),
+            messageInput: document.getElementById('messageInput'),
+            sendButton: document.getElementById('sendButton'),
+            modelSelect: document.getElementById('modelSelect'),
+            currentModel: document.getElementById('currentModel'),
+            status: document.getElementById('status'),
+            clearChat: document.getElementById('clearChat'),
+            typingIndicator: document.getElementById('typingIndicator'),
+            temperature: document.getElementById('temperature'),
+            tempValue: document.getElementById('tempValue'),
+            maxTokens: document.getElementById('maxTokens'),
+            tokensValue: document.getElementById('tokensValue'),
+            topP: document.getElementById('topP'),
+            topPValue: document.getElementById('topPValue')
+        };
+
+        // Model display names
+        const modelNames = {
+            'claude-opus-4': 'Claude Opus 4.5',
+            'claude-sonnet-4': 'Claude Sonnet 4.5',
+            'claude-haiku-4': 'Claude Haiku 4.5',
+            'claude-3-opus': 'Claude 3 Opus',
+            'claude-3-sonnet': 'Claude 3.5 Sonnet',
+            'claude-3-haiku': 'Claude 3.5 Haiku',
+            'gpt-4-turbo': 'GPT-4 Turbo',
+            'gpt-4': 'GPT-4',
+            'gpt-4o': 'GPT-4o',
+            'gpt-4o-mini': 'GPT-4o Mini',
+            'gpt-3.5-turbo': 'GPT-3.5 Turbo',
+            'o1-preview': 'o1 Preview',
+            'o1-mini': 'o1 Mini',
+            'gemini-2.0-flash': 'Gemini 2.0 Flash',
+            'gemini-1.5-pro': 'Gemini 1.5 Pro',
+            'gemini-1.5-flash': 'Gemini 1.5 Flash',
+            'gemini-pro': 'Gemini Pro',
+            'llama-3.3-70b': 'Llama 3.3 70B',
+            'llama-3.1-405b': 'Llama 3.1 405B',
+            'llama-3.1-70b': 'Llama 3.1 70B',
+            'llama-3.1-8b': 'Llama 3.1 8B',
+            'mistral-large': 'Mistral Large',
+            'mistral-medium': 'Mistral Medium',
+            'mistral-small': 'Mistral Small',
+            'mixtral-8x7b': 'Mixtral 8x7B',
+            'mixtral-8x22b': 'Mixtral 8x22B',
+            'command-r-plus': 'Command R+',
+            'command-r': 'Command R',
+            'command': 'Command',
+            'grok-2': 'Grok 2',
+            'grok-beta': 'Grok Beta',
+            'deepseek-chat': 'DeepSeek Chat',
+            'deepseek-coder': 'DeepSeek Coder',
+            'pplx-70b-online': 'Perplexity 70B Online',
+            'pplx-7b-chat': 'Perplexity 7B Chat'
+        };
+
+        // Initialize
+        function init() {
+            // Event listeners
+            elements.sendButton.addEventListener('click', sendMessage);
+            elements.messageInput.addEventListener('keydown', handleKeyDown);
+            elements.modelSelect.addEventListener('change', handleModelChange);
+            elements.clearChat.addEventListener('click', clearChat);
+            
+            // Parameter controls
+            elements.temperature.addEventListener('input', (e) => {
+                state.temperature = parseFloat(e.target.value);
+                elements.tempValue.textContent = e.target.value;
+            });
+            
+            elements.maxTokens.addEventListener('input', (e) => {
+                state.maxTokens = parseInt(e.target.value);
+                elements.tokensValue.textContent = e.target.value;
+            });
+            
+            elements.topP.addEventListener('input', (e) => {
+                state.topP = parseFloat(e.target.value);
+                elements.topPValue.textContent = e.target.value;
+            });
+
+            // Auto-resize textarea
+            elements.messageInput.addEventListener('input', autoResize);
+        }
+
+        function autoResize(e) {
+            e.target.style.height = 'auto';
+            e.target.style.height = Math.min(e.target.scrollHeight, 200) + 'px';
+        }
+
+        function handleKeyDown(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        }
+
+        function handleModelChange(e) {
+            state.currentModel = e.target.value;
+            elements.currentModel.textContent = modelNames[state.currentModel];
+            updateStatus('Model changed to ' + modelNames[state.currentModel]);
+        }
+
+        function updateStatus(message, type = 'info') {
+            elements.status.textContent = message;
+            elements.status.className = 'status';
+            if (type === 'connected') {
+                elements.status.classList.add('connected');
+            }
+            
+            setTimeout(() => {
+                elements.status.textContent = 'Ready';
+                elements.status.className = 'status';
+            }, 3000);
+        }
+
+        function addMessage(content, role) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${role}`;
+            
+            const avatar = role === 'user' ? 'U' : 'AI';
+            const name = role === 'user' ? 'You' : 'Assistant';
+            
+            messageDiv.innerHTML = `
+                <div class="message-header">
+                    <div class="message-avatar">${avatar}</div>
+                    <div class="message-name">${name}</div>
+                </div>
+                <div class="message-content">${escapeHtml(content)}</div>
+            `;
+            
+            elements.chatMessages.appendChild(messageDiv);
+            elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight;
+            
+            return messageDiv;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML.replace(/\n/g, '<br>');
+        }
+
+        async function sendMessage() {
+            const message = elements.messageInput.value.trim();
+            
+            if (!message || state.isProcessing) return;
+            
+            // Add user message
+            state.messages.push({ role: 'user', content: message });
+            addMessage(message, 'user');
+            
+            // Clear input
+            elements.messageInput.value = '';
+            elements.messageInput.style.height = 'auto';
+            
+            // Show typing indicator
+            state.isProcessing = true;
+            elements.sendButton.disabled = true;
+            elements.typingIndicator.classList.add('active');
+            updateStatus('Thinking...', 'connected');
+            
+            // Simulate API call
+            try {
+                const response = await simulateAPICall(message);
+                
+                // Hide typing indicator
+                elements.typingIndicator.classList.remove('active');
+                
+                // Add assistant response
+                state.messages.push({ role: 'assistant', content: response });
+                addMessage(response, 'assistant');
+                
+                updateStatus('Response received', 'connected');
+            } catch (error) {
+                elements.typingIndicator.classList.remove('active');
+                addErrorMessage(error.message);
+                updateStatus('Error occurred');
+            } finally {
+                state.isProcessing = false;
+                elements.sendButton.disabled = false;
+            }
+        }
+
+        function addErrorMessage(error) {
+            const lastMessage = elements.chatMessages.lastElementChild;
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error-message';
+            errorDiv.textContent = `Error: ${error}`;
+            lastMessage.appendChild(errorDiv);
+        }
+
+        async function simulateAPICall(message) {
+            // Simulate network delay
+            await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 2000));
+            
+            // Note: This is a demo interface. In production, you would integrate with actual API endpoints
+            const responses = [
+                `I'm currently in demo mode. To connect to ${modelNames[state.currentModel]}, you'll need to:\n\n1. Add your API key for the selected provider\n2. Implement the API integration for ${modelNames[state.currentModel]}\n3. Configure the proper endpoints and authentication\n\nThe interface is ready - it just needs the API connections to be configured!`,
+                `This is a demonstration of the Universal AI Chat interface. I'm showing you how the chat would work with ${modelNames[state.currentModel]}.\n\nYour message: "${message}"\n\nTo make this functional, integrate the APIs for your selected models with their respective authentication tokens.`,
+                `Interface working perfectly! You've selected ${modelNames[state.currentModel]} with:\n• Temperature: ${state.temperature}\n• Max Tokens: ${state.maxTokens}\n• Top P: ${state.topP}\n\nAdd API integration to start real conversations.`
+            ];
+            
+            return responses[Math.floor(Math.random() * responses.length)];
+        }
+
+        function clearChat() {
+            state.messages = [];
+            elements.chatMessages.innerHTML = `
+                <div class="message assistant">
+                    <div class="message-header">
+                        <div class="message-avatar">AI</div>
+                        <div class="message-name">Assistant</div>
+                    </div>
+                    <div class="message-content">
+                        Chat cleared! Ready for a fresh conversation with ${modelNames[state.currentModel]}.
+                    </div>
+                </div>
+            `;
+            updateStatus('Chat cleared');
+        }
+
+        // Initialize the app
+        init();
+    </script>
+</body>
+</html>
